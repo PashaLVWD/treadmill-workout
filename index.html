@@ -22,13 +22,14 @@ main{max-width:730px;margin:0 auto;padding:24px 16px 60px}h1{font-size:clamp(25p
 /* Keep the next stage title together, and its settings as an indivisible pair.
    The group may move to a second line, but a setting or separator never dangles. */
 .up-next{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:11px;row-gap:2px;border-top:1px solid #455872;padding:12px 0 0;margin:13px 0 15px;line-height:1.35}
-.up-next__title{flex:0 1 auto;max-width:100%;min-width:0}
+.up-next__title{flex:0 0 auto;white-space:nowrap;min-width:0}
 .up-next__settings{display:inline-flex;align-items:baseline;gap:8px;flex:0 0 auto;white-space:nowrap}
 .up-next__settings[hidden]{display:none}
 .up-next__label{color:#ffd27f;font-size:clamp(17px,4.4vw,19px);font-weight:800;white-space:nowrap}
 .up-next__value{font-size:clamp(19px,4.7vw,21px);font-weight:700;color:#fff1d2;overflow-wrap:normal}
 .up-next__setting{font-size:clamp(19px,4.7vw,21px);font-weight:800;color:#f2ce8b;white-space:nowrap;font-variant-numeric:tabular-nums}
 .up-next__separator{color:#c1cbd6;font-size:16px}
+@media(max-width:360px){.up-next__label{font-size:16px}.up-next__value{font-size:17px}.up-next__setting{font-size:19px}}
 /* Schedule behaves like the original: the whole page scrolls normally. */
 .schedule-head h2{margin:0 0 12px;font-size:20px}
 @media(max-width:380px){li{grid-template-columns:42px minmax(0,1fr) 42px 48px;gap:5px}}
