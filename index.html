@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>45-Minute Treadmill Hill Workout</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--card:#172235;--line:#2c3d52;--fg:#ecf5ff;--muted:#aebed0;--accent:#75e2b7;--warn:#ffd282}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:730px;margin:0 auto;padding:24px 16px 60px}h1{font-size:clamp(25px,6vw,34px);line-height:1.12;margin:5px 0 12px;letter-spacing:-.7px}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.15em;color:var(--accent);text-transform:uppercase}.muted{color:var(--muted);margin:0 0 14px} .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:19px;margin:14px 0}.eyeline{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid #41617b;color:#cfe5f5;padding:4px 10px;border-radius:30px;font-size:12px;font-weight:700}.countdown{font-size:clamp(68px,17vw,114px);letter-spacing:-.065em;font-variant-numeric:tabular-nums;font-weight:800;line-height:1.06;margin:5px 0;text-align:center}.center{text-align:center}.phase{color:var(--accent);font-size:21px;font-weight:700}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0 14px}.metric{background:#0b1828;padding:14px;border-radius:16px;text-align:center}.metric .value{font-size:clamp(32px,8vw,46px);font-weight:850;font-variant-numeric:tabular-nums;line-height:1.1}.metric .label{color:var(--muted);font-size:12px;margin-top:6px}.note{font-size:13px;color:var(--muted)}.progress{height:10px;background:#0d1b2c;border-radius:10px;overflow:hidden}.progress>div{height:100%;background:var(--accent);width:0%;transition:width .2s linear}.controls{display:grid;grid-template-columns:1.7fr 1fr;gap:10px;margin:16px 0 8px}button{appearance:none;cursor:pointer;border:0;border-radius:14px;padding:14px 11px;font-size:16px;font-weight:750;color:#071a1c;background:var(--accent);min-height:50px}button.secondary{background:#26354b;color:var(--fg);border:1px solid #496079}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible{outline:3px solid #fafbff;outline-offset:2px}.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{font-size:13px;min-height:38px;padding:8px 12px}.smallstatus{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin:12px 0 7px}#next{color:#dcece7;margin-top:10px}ol{padding:0;list-style:none;margin:0}li{display:grid;grid-template-columns:45px 1fr auto;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);font-size:13px;border-radius:10px}li:last-child{border-bottom:0}li.current{background:#184a43;outline:1px solid #357d69}li.done{opacity:.53}li .when{color:var(--muted);font-variant-numeric:tabular-nums}li strong{display:block;font-size:14px}li .set{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}li .set small{display:block;color:var(--muted);font-size:11px;font-weight:400}.warning{padding:10px 12px;border:1px solid #5f5037;background:#29251d;border-radius:12px;color:#ffe7b9;font-size:13px;margin-top:14px}.footer{font-size:13px;color:var(--muted);margin-top:18px}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">Guided treadmill walking</div><h1>45-minute hill workout</h1>
+<p class="muted">Designed for intermediate walking with two short 10% incline peaks. Start <strong>Treadmill</strong> tracking on your Fitbit separately.</p>
+<div class="eyeline"><span class="pill">45 minutes</span><span class="pill">2.0–3.0 mph</span><span class="pill">0–10% incline</span><span class="pill">13 stages</span></div>
+<section class="box" aria-label="Workout timer"><div class="smallstatus"><span id="stepCounter">Stage 1 of 13</span><span id="elapsed">Total 00:00 / 45:00</span></div>
+<div class="progress"><div id="progressBar"></div></div>
+<div class="center" style="padding-top:13px"><div id="phase" class="phase">Warm-up</div><div id="countdown" class="countdown" aria-live="off">05:00</div><div class="note">Remaining in this stage</div></div>
+<div class="metrics"><div class="metric"><div id="speed" class="value">2.5</div><div class="label">SPEED · MPH</div></div><div class="metric"><div id="incline" class="value">0%</div><div class="label">INCLINE</div></div></div>
+<p id="next" class="note">Up next: Brisk walk · 2.9 mph · 1% incline</p>
+<div class="controls"><button id="start">Start workout</button><button id="reset" class="secondary">Reset</button></div>
+<div class="actions"><button id="voice" class="secondary">🔊 Test voice cue</button><button id="previous" class="secondary">← Previous stage</button><button id="skip" class="secondary">Next stage →</button></div>
+<div id="status" class="warning">Keep this page open and your iPhone screen awake during the session. iPhone browsers can pause timers and spoken alerts when the screen locks. Treadmill adjustments are manual.</div>
+</section>
+<section class="box"><h2 style="margin:0 0 12px;font-size:19px">Complete schedule</h2><ol id="intervals"></ol></section>
+<p class="footer">Safety: Start conservatively. Reduce speed or incline if your breathing becomes uncontrolled or if you need to hold the handrails to support your weight. Stop for chest pain, dizziness, or unusual shortness of breath. This timer does not control the treadmill or read Fitbit heart rate.</p>
+</main>
+<script>
+(()=>{
+'use strict';
+const stages=[
+{name:'Warm-up',minutes:5,speed:2.5,incline:0},
+{name:'Brisk walk',minutes:5,speed:2.9,incline:1},
+{name:'Moderate climb',minutes:5,speed:3.0,incline:3},
+{name:'Challenging climb',minutes:3,speed:2.7,incline:6},
+{name:'Recovery',minutes:3,speed:2.6,incline:1},
+{name:'Sustained climb',minutes:4,speed:2.8,incline:5},
+{name:'Steep climb',minutes:3,speed:2.3,incline:8},
+{name:'Peak climb one',minutes:2,speed:2.0,incline:10},
+{name:'Recovery',minutes:3,speed:2.6,incline:1},
+{name:'Brisk climb',minutes:3,speed:3.0,incline:4},
+{name:'Steep climb',minutes:2,speed:2.3,incline:8},
+{name:'Peak climb two',minutes:2,speed:2.2,incline:10},
+{name:'Cooldown',minutes:5,speed:2.3,incline:0}
+];
+const durations=stages.map(s=>s.minutes*60),bounds=[0];durations.forEach(d=>bounds.push(bounds.at(-1)+d));const total=bounds.at(-1);if(total!==2700)throw Error('Workout must be 45 minutes');
+let running=false,elapsed=0,startedAt=0,handle=null,lastIndex=-1,doneAnnounced=false,audioCtx=null;
+const $=id=>document.getElementById(id);
+function format(seconds){seconds=Math.max(0,Math.ceil(seconds));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
+function currentIndex(t){if(t>=total)return stages.length-1;return Math.max(0,bounds.findIndex((v,i)=>i<stages.length&&t<bounds[i+1]))}
+function cue(s){if('speechSynthesis' in window){try{window.speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(`${s.name}. Set speed ${s.speed.toFixed(1)} miles per hour. Incline ${s.incline} percent.`);utter.rate=.94;utter.lang='en-US';window.speechSynthesis.speak(utter)}catch(e){}}}
+function chime(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return; audioCtx=audioCtx||new A();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=820;g.gain.setValueAtTime(.09,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.18);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.19)}catch(e){}}
+function refresh(talk=false){const i=currentIndex(elapsed),s=stages[i],remaining=elapsed>=total?0:bounds[i+1]-elapsed;
+$('phase').textContent=elapsed>=total?'Workout complete':s.name;$('countdown').textContent=format(remaining);$('speed').textContent=s.speed.toFixed(1);$('incline').textContent=s.incline+'%';$('stepCounter').textContent=`Stage ${i+1} of ${stages.length}`;$('elapsed').textContent=`Total ${format(elapsed)} / 45:00`;$('progressBar').style.width=(elapsed/total*100)+'%';$('start').textContent=elapsed>=total?'Restart workout':(running?'Pause':'Resume workout');if(elapsed===0&&!running)$('start').textContent='Start workout';
+const next=stages[i+1];$('next').textContent=elapsed>=total?'All 45 minutes completed. Great work.':next?`Up next: ${next.name} · ${next.speed.toFixed(1)} mph · ${next.incline}% incline`:'Final stage: cooldown';
+[...$('intervals').children].forEach((li,j)=>{li.className=j===i&&elapsed<total?'current':bounds[j+1]<=elapsed?'done':''});
+if(talk&&i!==lastIndex&&elapsed<total){chime();cue(s)}lastIndex=i;
+if(elapsed>=total&&!doneAnnounced){doneAnnounced=true;chime();if('speechSynthesis' in window)window.speechSynthesis.speak(new SpeechSynthesisUtterance('Workout complete. Nice work.'))}
+}
+function tick(){if(!running)return;const old=elapsed;elapsed=Math.min(total,Math.floor((Date.now()-startedAt)/1000));if(elapsed>=total){running=false;clearInterval(handle)}refresh(currentIndex(old)!==currentIndex(elapsed));}
+function pause(){if(running){tick();running=false;clearInterval(handle);handle=null;refresh()}}
+function start(){if(elapsed>=total){elapsed=0;lastIndex=-1;doneAnnounced=false}if(running){pause();return}startedAt=Date.now()-elapsed*1000;running=true;refresh(elapsed===0||lastIndex===-1);handle=setInterval(tick,250)}
+function jump(i){const wasRunning=running;if(running)pause();elapsed=bounds[Math.max(0,Math.min(stages.length-1,i))];lastIndex=-1;doneAnnounced=false;if(wasRunning){startedAt=Date.now()-elapsed*1000;running=true;handle=setInterval(tick,250);refresh(true)}else refresh()}
+$('start').addEventListener('click',start);$('reset').addEventListener('click',()=>{pause();elapsed=0;lastIndex=-1;doneAnnounced=false;refresh()});$('voice').addEventListener('click',()=>{chime();cue(stages[currentIndex(elapsed)])});$('previous').addEventListener('click',()=>jump(currentIndex(elapsed)-1));$('skip').addEventListener('click',()=>jump(currentIndex(elapsed)+1));
+stages.forEach((s,i)=>{const li=document.createElement('li');const when=document.createElement('span');when.className='when';when.textContent=format(bounds[i]);const desc=document.createElement('span');const strong=document.createElement('strong');strong.textContent=s.name;desc.append(strong,document.createTextNode(s.minutes+' min'));const set=document.createElement('div');set.className='set';set.textContent=s.speed.toFixed(1)+' mph';const small=document.createElement('small');small.textContent=s.incline+'% incline';set.append(small);li.append(when,desc,set);$('intervals').append(li)});
+refresh();
+})();
+</script>
+</body></html>
