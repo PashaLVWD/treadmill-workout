@@ -19,9 +19,14 @@ main{max-width:730px;margin:0 auto;padding:24px 16px 60px}h1{font-size:clamp(25p
 @media(max-width:360px){.session-facts{font-size:12.5px}.session-facts .sep{padding:0 2px}}
 #awake{font-size:12px;color:var(--muted);margin:10px 0 4px}
 /* A quiet, high-contrast one-line preview: no nested cards competing with the timer. */
-.up-next{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:6px;row-gap:2px;border-top:1px solid #455872;padding:12px 0 0;margin:13px 0 15px;line-height:1.35}
+/* Keep the next stage title together, and its settings as an indivisible pair.
+   The group may move to a second line, but a setting or separator never dangles. */
+.up-next{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:11px;row-gap:2px;border-top:1px solid #455872;padding:12px 0 0;margin:13px 0 15px;line-height:1.35}
+.up-next__title{flex:0 1 auto;max-width:100%;min-width:0}
+.up-next__settings{display:inline-flex;align-items:baseline;gap:8px;flex:0 0 auto;white-space:nowrap}
+.up-next__settings[hidden]{display:none}
 .up-next__label{color:#ffd27f;font-size:clamp(17px,4.4vw,19px);font-weight:800;white-space:nowrap}
-.up-next__value{font-size:clamp(19px,4.7vw,21px);font-weight:700;color:#fff1d2;min-width:0}
+.up-next__value{font-size:clamp(19px,4.7vw,21px);font-weight:700;color:#fff1d2;overflow-wrap:normal}
 .up-next__setting{font-size:clamp(19px,4.7vw,21px);font-weight:800;color:#f2ce8b;white-space:nowrap;font-variant-numeric:tabular-nums}
 .up-next__separator{color:#c1cbd6;font-size:16px}
 /* Schedule behaves like the original: the whole page scrolls normally. */
@@ -42,7 +47,7 @@ main{max-width:730px;margin:0 auto;padding:24px 16px 60px}h1{font-size:clamp(25p
 <div class="progress"><div id="progressBar"></div></div>
 <div class="center" style="padding-top:13px"><div id="phase" class="phase">Warm-up</div><div id="countdown" class="countdown" aria-live="off">05:00</div><div class="note">Remaining in this stage</div></div>
 <div class="metrics"><div class="metric"><div id="incline" class="value">0%</div><div class="label">INCLINE</div></div><div class="metric"><div id="speed" class="value">2.5</div><div class="label">SPEED · MPH</div></div></div>
-<div class="up-next" role="status" aria-label="Upcoming interval"><span class="up-next__label">Up next:</span><span id="next" class="up-next__value">Brisk walk</span><span class="up-next__separator" aria-hidden="true">·</span><strong id="nextIncline" class="up-next__setting" aria-label="Next incline">1%</strong><span class="up-next__separator" aria-hidden="true">·</span><strong id="nextSpeed" class="up-next__setting" aria-label="Next speed">2.9 mph</strong></div>
+<div class="up-next" role="status" aria-label="Upcoming interval"><span class="up-next__title"><span id="upNextLabel" class="up-next__label">Up next:</span> <span id="next" class="up-next__value">Brisk walk</span></span><span id="nextSettings" class="up-next__settings"><strong id="nextIncline" class="up-next__setting" aria-label="Next incline">1%</strong><span class="up-next__separator" aria-hidden="true">·</span><strong id="nextSpeed" class="up-next__setting" aria-label="Next speed">2.9 mph</strong></span></div>
 <div class="controls"><button id="start">Start workout</button><button id="reset" class="secondary">Reset</button></div>
 <div class="actions"><button id="previous" class="secondary">← Previous</button><button id="skip" class="secondary">Next →</button></div>
 <div class="voice-row"><button id="voice" type="button">🔊 Test voice cue</button></div>
@@ -98,7 +103,8 @@ function configureWorkout(which){
  $('intervals').replaceChildren();
  stages.forEach((s,i)=>{const li=document.createElement('li');const when=document.createElement('span');when.className='when';when.textContent=format(bounds[i]);const desc=document.createElement('span');const strong=document.createElement('strong');strong.textContent=s.name;desc.append(strong,document.createTextNode(s.minutes+' min'));const incline=document.createElement('div');incline.className='set';incline.textContent=s.incline+'%';const ilabel=document.createElement('small');ilabel.textContent='incline';incline.append(ilabel);const speed=document.createElement('div');speed.className='set';speed.textContent=s.speed.toFixed(1);const slabel=document.createElement('small');slabel.textContent='mph';speed.append(slabel);li.append(when,desc,incline,speed);$('intervals').append(li)});
 }
-let running=false,elapsed=0,startedAt=0,handle=null,lastIndex=-1,doneAnnounced=false,audioCtx=null,wakeLock=null;
+let running=false,elapsed=0,startedAt=0,handle=null,lastIndex=-1,doneAnnounced=false,announcedUpcomingIndex=-1,audioCtx=null,wakeLock=null;
+const ADVANCE_WARNING_SECONDS=10;
 async function requestWakeLock(){
  if(!('wakeLock' in navigator)){ $('awake').textContent='Screen awake: not supported here — keep screen awake manually';return;}
  if(document.visibilityState!=='visible')return;
@@ -111,23 +117,49 @@ function releaseWakeLock(){if(wakeLock){const lock=wakeLock;wakeLock=null;lock.r
 const $=id=>document.getElementById(id);
 function format(seconds){seconds=Math.max(0,Math.ceil(seconds));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}
 function currentIndex(t){if(t>=total)return stages.length-1;return Math.max(0,bounds.findIndex((v,i)=>i<stages.length&&t<bounds[i+1]))}
-function cue(s){if('speechSynthesis' in window){try{window.speechSynthesis.cancel();const utter=new SpeechSynthesisUtterance(`${s.name}. Set incline ${s.incline} percent. Speed ${s.speed.toFixed(1)} miles per hour.`);utter.rate=.94;utter.lang='en-US';window.speechSynthesis.speak(utter)}catch(e){}}}
+function say(message){
+ if('speechSynthesis' in window){try{
+  window.speechSynthesis.cancel();
+  const utter=new SpeechSynthesisUtterance(message);utter.rate=.94;utter.lang='en-US';
+  window.speechSynthesis.speak(utter);
+ }catch(e){}}
+}
+function cue(s){say(`${s.name}. Set incline ${s.incline} percent. Speed ${s.speed.toFixed(1)} miles per hour.`)}
+function advanceCue(s){say(`In ten seconds: ${s.name}. Incline ${s.incline} percent. Speed ${s.speed.toFixed(1)} miles per hour.`)}
+function checkUpcomingWarning(){
+ if(!running||elapsed>=total)return;
+ const i=currentIndex(elapsed),next=i+1;
+ if(next>=stages.length||announcedUpcomingIndex===next)return;
+ const remaining=bounds[next]-elapsed;
+ // Only announce near the true 10-second mark; don't give a misleading late
+ // warning after iOS suspends the page and then resumes several seconds later.
+ if(remaining<=ADVANCE_WARNING_SECONDS&&remaining>=ADVANCE_WARNING_SECONDS-1){
+  announcedUpcomingIndex=next;
+  advanceCue(stages[next]);
+ }
+}
 function chime(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return; audioCtx=audioCtx||new A();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=820;g.gain.setValueAtTime(.09,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.18);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.19)}catch(e){}}
 function refresh(talk=false){const i=currentIndex(elapsed),s=stages[i],remaining=elapsed>=total?0:bounds[i+1]-elapsed;
 $('phase').textContent=elapsed>=total?'Workout complete':s.name;$('countdown').textContent=format(remaining);$('speed').textContent=s.speed.toFixed(1);$('incline').textContent=s.incline+'%';
 $('stepCounter').textContent=`Stage ${i+1} of ${stages.length}`;$('elapsed').textContent=`Total ${format(elapsed)} / 45:00`;$('progressBar').style.width=(elapsed/total*100)+'%';$('start').textContent=elapsed>=total?'Restart workout':(running?'Pause':'Resume workout');if(elapsed===0&&!running)$('start').textContent='Start workout';$('workoutChoice').disabled=running||elapsed>0;
-const next=stages[i+1];$('next').textContent=elapsed>=total?'Workout complete':next?next.name:'Finish the cooldown';$('nextIncline').textContent=next?next.incline+'%':'—';$('nextSpeed').textContent=next?next.speed.toFixed(1)+' mph':'—';
+const next=stages[i+1];$('upNextLabel').textContent=elapsed>=total?'Finished:':'Up next:';$('next').textContent=elapsed>=total?'Workout complete':next?next.name:'Workout complete';$('nextSettings').hidden=!next||elapsed>=total;if(next){$('nextIncline').textContent=next.incline+'%';$('nextSpeed').textContent=next.speed.toFixed(1)+' mph';}
 [...$('intervals').children].forEach((li,j)=>{li.className=j===i&&elapsed<total?'current':bounds[j+1]<=elapsed?'done':''});
 
-if(talk&&i!==lastIndex&&elapsed<total){chime();cue(s)}lastIndex=i;
+if(talk&&elapsed<total){
+ chime();
+ // The advance cue already gave the settings; chime only at the boundary.
+ // Speak the stage as a fallback if the advance cue was missed or we jumped.
+ if(announcedUpcomingIndex!==i)cue(s);
+}
+lastIndex=i;
 if(elapsed>=total&&!doneAnnounced){doneAnnounced=true;chime();if('speechSynthesis' in window)window.speechSynthesis.speak(new SpeechSynthesisUtterance('Workout complete. Nice work.'))}
 }
-function tick(){if(!running)return;const old=elapsed;elapsed=Math.min(total,Math.floor((Date.now()-startedAt)/1000));if(elapsed>=total){running=false;clearInterval(handle);handle=null;releaseWakeLock()}refresh(currentIndex(old)!==currentIndex(elapsed));}
+function tick(){if(!running)return;const old=elapsed;elapsed=Math.min(total,Math.floor((Date.now()-startedAt)/1000));if(elapsed>=total){running=false;clearInterval(handle);handle=null;releaseWakeLock()}refresh(currentIndex(old)!==currentIndex(elapsed));checkUpcomingWarning();}
 function pause(){if(running){tick();running=false;clearInterval(handle);handle=null;releaseWakeLock();refresh()}}
-function start(){if(elapsed>=total){elapsed=0;lastIndex=-1;doneAnnounced=false}if(running){pause();return}startedAt=Date.now()-elapsed*1000;running=true;requestWakeLock();refresh(elapsed===0||lastIndex===-1);handle=setInterval(tick,250)}
-function jump(i){const wasRunning=running;if(running)pause();elapsed=bounds[Math.max(0,Math.min(stages.length-1,i))];lastIndex=-1;doneAnnounced=false;if(wasRunning){startedAt=Date.now()-elapsed*1000;running=true;requestWakeLock();handle=setInterval(tick,250);refresh(true)}else refresh()}
-$('start').addEventListener('click',start);$('reset').addEventListener('click',()=>{pause();elapsed=0;lastIndex=-1;doneAnnounced=false;refresh()});$('voice').addEventListener('click',()=>{chime();cue(stages[currentIndex(elapsed)])});$('previous').addEventListener('click',()=>jump(currentIndex(elapsed)-1));$('skip').addEventListener('click',()=>jump(currentIndex(elapsed)+1));
-$('workoutChoice').addEventListener('change',()=>{elapsed=0;lastIndex=-1;doneAnnounced=false;configureWorkout($('workoutChoice').value);refresh();});
+function start(){if(elapsed>=total){elapsed=0;lastIndex=-1;doneAnnounced=false;announcedUpcomingIndex=-1}if(running){pause();return}startedAt=Date.now()-elapsed*1000;running=true;requestWakeLock();refresh(elapsed===0||lastIndex===-1);checkUpcomingWarning();handle=setInterval(tick,250)}
+function jump(i){const wasRunning=running;if(running)pause();elapsed=bounds[Math.max(0,Math.min(stages.length-1,i))];lastIndex=-1;doneAnnounced=false;announcedUpcomingIndex=-1;if(wasRunning){startedAt=Date.now()-elapsed*1000;running=true;requestWakeLock();handle=setInterval(tick,250);refresh(true)}else refresh()}
+$('start').addEventListener('click',start);$('reset').addEventListener('click',()=>{pause();elapsed=0;lastIndex=-1;doneAnnounced=false;announcedUpcomingIndex=-1;refresh()});$('voice').addEventListener('click',()=>{chime();cue(stages[currentIndex(elapsed)])});$('previous').addEventListener('click',()=>jump(currentIndex(elapsed)-1));$('skip').addEventListener('click',()=>jump(currentIndex(elapsed)+1));
+$('workoutChoice').addEventListener('change',()=>{elapsed=0;lastIndex=-1;doneAnnounced=false;announcedUpcomingIndex=-1;configureWorkout($('workoutChoice').value);refresh();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running){tick();requestWakeLock();}});
 configureWorkout('v2');
 refresh();
